@@ -637,8 +637,8 @@ impl Renderer {
                     viewport.physical_height(),
                 );
 
+                let _ = ManuallyDrop::into_inner(render_pass);
                 if !need_render.is_empty() {
-                    let _ = ManuallyDrop::into_inner(render_pass);
 
                     for (instance, clip_bounds) in need_render {
                         instance.primitive.render(
@@ -649,26 +649,27 @@ impl Renderer {
                         );
                     }
 
-                    render_pass = ManuallyDrop::new(encoder.begin_render_pass(
-                        &wgpu::RenderPassDescriptor {
-                            label: Some("iced_wgpu render pass"),
-                            color_attachments: &[Some(
-                                wgpu::RenderPassColorAttachment {
-                                    view: frame,
-                                    depth_slice: None,
-                                    resolve_target: None,
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Load,
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                },
-                            )],
-                            depth_stencil_attachment: None,
-                            timestamp_writes: None,
-                            occlusion_query_set: None,
-                        },
-                    ));
                 }
+                
+                render_pass = ManuallyDrop::new(encoder.begin_render_pass(
+                    &wgpu::RenderPassDescriptor {
+                        label: Some("iced_wgpu render pass"),
+                        color_attachments: &[Some(
+                            wgpu::RenderPassColorAttachment {
+                                view: frame,
+                                depth_slice: None,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            },
+                        )],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    },
+                ));
 
                 render_span.finish();
             }
