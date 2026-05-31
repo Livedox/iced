@@ -468,8 +468,10 @@ impl Renderer {
         ));
 
         let scale = Transformation::scale(scale_factor);
-
+        let mut layer_count = 0;
         for layer in self.layers.iter() {
+            layer_count += 1;
+            println!("layers: {:?}", layer_count);
             let Some(physical_bounds) =
                 physical_bounds.intersection(&(layer.bounds * scale_factor))
             else {
