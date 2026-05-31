@@ -75,7 +75,9 @@ use crate::graphics::{Shell, Viewport};
 /// [`iced`]: https://github.com/iced-rs/iced
 pub struct Renderer {
     engine: Engine,
+    vix_sample_count: Option<u32>,
     vix_depth_texture_view: Option<wgpu::TextureView>,
+    vix_multisampled_framebuffer: Option<wgpu::TextureView>,
 
     default_font: Font,
     default_text_size: Pixels,
@@ -104,6 +106,9 @@ impl Renderer {
     ) -> Self {
         Self {
             vix_depth_texture_view: None,
+            vix_multisampled_framebuffer: None,
+            vix_sample_count: None,
+
             default_font,
             default_text_size,
             layers: layer::Stack::new(),
@@ -171,6 +176,15 @@ impl Renderer {
 
     pub fn update_depth_texture_view(&mut self, view: wgpu::TextureView) {
         self.vix_depth_texture_view = Some(view);
+    }
+
+    pub fn update_sample_view(
+        &mut self,
+        view: wgpu::TextureView,
+        sample_count: u32,
+    ) {
+        self.vix_sample_count = Some(sample_count);
+        self.vix_multisampled_framebuffer = Some(view);
     }
 
     pub fn present(
@@ -549,24 +563,37 @@ impl Renderer {
             }
 
             if let Some(depth_view) = &self.vix_depth_texture_view &&
+                let Some(sample_count) = self.vix_sample_count &&
                 !layer.primitives.is_empty()
             {
                 let render_span = debug::render(debug::Primitive::Shader);
                 let _ = ManuallyDrop::into_inner(render_pass);
+                let color_attachment = if sample_count == 1 {
+                    wgpu::RenderPassColorAttachment {
+                        view: frame,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    }
+                } else {
+                    wgpu::RenderPassColorAttachment {
+                        view: self.vix_multisampled_framebuffer.as_ref()
+                            .unwrap(),
+                        depth_slice: None,
+                        resolve_target: Some(frame),
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    }
+                };
                 render_pass = ManuallyDrop::new(encoder.begin_render_pass(
                     &wgpu::RenderPassDescriptor {
                         label: Some("iced_wgpu custom shader render pass"),
-                        color_attachments: &[Some(
-                            wgpu::RenderPassColorAttachment {
-                                view: frame,
-                                depth_slice: None,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Load,
-                                    store: wgpu::StoreOp::Store,
-                                },
-                            },
-                        )],
+                        color_attachments: &[Some(color_attachment)],
                         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                             view: depth_view,
                             depth_ops: Some(wgpu::Operations {
@@ -650,7 +677,7 @@ impl Renderer {
                     }
 
                 }
-                
+
                 render_pass = ManuallyDrop::new(encoder.begin_render_pass(
                     &wgpu::RenderPassDescriptor {
                         label: Some("iced_wgpu render pass"),
