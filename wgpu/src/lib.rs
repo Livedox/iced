@@ -75,6 +75,7 @@ use crate::graphics::{Shell, Viewport};
 /// [`iced`]: https://github.com/iced-rs/iced
 pub struct Renderer {
     engine: Engine,
+    vix_depth_texture_view: Option<wgpu::TextureView>,
 
     default_font: Font,
     default_text_size: Pixels,
@@ -102,6 +103,7 @@ impl Renderer {
         default_text_size: Pixels,
     ) -> Self {
         Self {
+            vix_depth_texture_view: None,
             default_font,
             default_text_size,
             layers: layer::Stack::new(),
@@ -144,7 +146,12 @@ impl Renderer {
         );
 
         self.prepare(&mut encoder, viewport);
-        self.render(&mut encoder, target, clear_color, viewport);
+        self.render(
+            &mut encoder,
+            target,
+            clear_color,
+            viewport
+        );
 
         self.quad.trim();
         self.triangle.trim();
@@ -162,6 +169,10 @@ impl Renderer {
         encoder
     }
 
+    pub fn update_depth_texture_view(&mut self, view: wgpu::TextureView) {
+        self.vix_depth_texture_view = Some(view);
+    }
+
     pub fn present(
         &mut self,
         clear_color: Option<Color>,
@@ -169,7 +180,11 @@ impl Renderer {
         frame: &wgpu::TextureView,
         viewport: &Viewport,
     ) -> wgpu::SubmissionIndex {
-        let encoder = self.draw(clear_color, frame, viewport);
+        let encoder = self.draw(
+            clear_color,
+            frame,
+            viewport
+        );
 
         self.staging_belt.finish();
         let submission = self.engine.queue.submit([encoder.finish()]);
@@ -236,7 +251,11 @@ impl Renderer {
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self.draw(Some(background_color), &view, viewport);
+        let mut encoder = self.draw(
+            Some(background_color),
+            &view,
+            viewport
+        );
 
         let texture = crate::color::convert(
             &self.engine.device,
@@ -468,10 +487,7 @@ impl Renderer {
         ));
 
         let scale = Transformation::scale(scale_factor);
-        let mut layer_count = 0;
         for layer in self.layers.iter() {
-            layer_count += 1;
-            println!("layers: {:?}", layer_count);
             let Some(physical_bounds) =
                 physical_bounds.intersection(&(layer.bounds * scale_factor))
             else {
@@ -532,8 +548,37 @@ impl Renderer {
                 ));
             }
 
-            if !layer.primitives.is_empty() {
+            if let Some(depth_view) = &self.vix_depth_texture_view &&
+                !layer.primitives.is_empty()
+            {
                 let render_span = debug::render(debug::Primitive::Shader);
+                let _ = ManuallyDrop::into_inner(render_pass);
+                render_pass = ManuallyDrop::new(encoder.begin_render_pass(
+                    &wgpu::RenderPassDescriptor {
+                        label: Some("iced_wgpu custom shader render pass"),
+                        color_attachments: &[Some(
+                            wgpu::RenderPassColorAttachment {
+                                view: frame,
+                                depth_slice: None,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            },
+                        )],
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                            view: depth_view,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.0),
+                                store: wgpu::StoreOp::Store,
+                            }),
+                            stencil_ops: None,
+                        }),
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    },
+                ));
 
                 let primitive_storage = self
                     .engine
