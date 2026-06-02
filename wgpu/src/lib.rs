@@ -174,17 +174,43 @@ impl Renderer {
         encoder
     }
 
-    pub fn update_depth_texture_view(&mut self, view: wgpu::TextureView) {
-        self.vix_depth_texture_view = Some(view);
-    }
-
-    pub fn update_sample_view(
+    /// Initializes additional buffers for custom rendering with multisampling (MSAA)
+    /// and depth testing support.
+    ///
+    /// # Important
+    ///
+    /// **This function MUST be called immediately after creating the [`Renderer`] if
+    /// your application uses custom shader primitives (e.g., via [`Primitive`]).**
+    /// Failure to do so will result in a panic during rendering when the renderer
+    /// tries to access the depth texture or multisampled framebuffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `depth_view` - The depth (and stencil) texture view. This will be attached
+    ///   as a `depth_stencil_attachment` when rendering custom shader primitives.
+    ///   Even if your shaders don't use the depth buffer, the render pipeline
+    ///   requires a valid attachment if MSAA is enabled.
+    /// * `msaa_view` - The multisampled color texture view. This is the target buffer
+    ///   for rendering when `sample_count` is greater than `1`. The GPU will resolve
+    ///   (downsample) this buffer into the main swap chain frame after rendering.
+    /// * `sample_count` - The number of samples used for multisampled anti-aliasing.
+    ///   If this value is `1` (no multisampling), the renderer will draw directly
+    ///   into the main frame buffer, and `msaa_view` will not be used.
+    ///
+    /// # Note
+    ///
+    /// This method is specifically designed for integration with external rendering
+    /// systems (like VIX) and is not part of the standard `iced_wgpu` pipeline flow.
+    /// Its unconventional name reflects its specialized and critical nature.
+    pub fn vix_init_iced_important(
         &mut self,
-        view: wgpu::TextureView,
+        depth_view: wgpu::TextureView,
+        msaa_view: wgpu::TextureView,
         sample_count: u32,
     ) {
+        self.vix_depth_texture_view = Some(depth_view);
         self.vix_sample_count = Some(sample_count);
-        self.vix_multisampled_framebuffer = Some(view);
+        self.vix_multisampled_framebuffer = Some(msaa_view);
     }
 
     pub fn present(
@@ -618,7 +644,7 @@ impl Renderer {
                 for instance in &layer.primitives {
                     let bounds = instance.bounds * scale;
 
-                    if let Some(clip_bounds) = (instance.bounds * scale)
+                    if let Some(clip_bounds) = bounds
                         .intersection(&physical_bounds)
                         .and_then(Rectangle::snap)
                     {
