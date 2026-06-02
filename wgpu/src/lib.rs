@@ -188,20 +188,53 @@ impl Renderer {
     ///
     /// * `depth_view` - The depth (and stencil) texture view. This will be attached
     ///   as a `depth_stencil_attachment` when rendering custom shader primitives.
+    ///   The depth texture must use `f32` as its depth format (e.g., 
+    ///   `wgpu::TextureFormat::Depth32Float`),
+    ///   as the renderer writes `f32` depth values. The depth clear value is `1.0`,
+    ///   meaning that objects with a depth value closer to `0.0` will be visible.
     ///   Even if your shaders don't use the depth buffer, the render pipeline
     ///   requires a valid attachment if MSAA is enabled.
+    ///
     /// * `msaa_view` - The multisampled color texture view. This is the target buffer
     ///   for rendering when `sample_count` is greater than `1`. The GPU will resolve
     ///   (downsample) this buffer into the main swap chain frame after rendering.
+    ///
     /// * `sample_count` - The number of samples used for multisampled anti-aliasing.
     ///   If this value is `1` (no multisampling), the renderer will draw directly
     ///   into the main frame buffer, and `msaa_view` will not be used.
+    ///
+    /// # Depth Buffer Details
+    ///
+    /// The depth buffer is used for depth testing during custom shader rendering:
+    /// - **Format**: `f32` floating-point depth values
+    /// - **Clear value**: `1.0` (maximum depth, meaning "far away")
+    /// - **Depth range**: `0.0` (near) to `1.0` (far), as set by the viewport
+    /// - **Depth test**: Objects with smaller depth values (closer to `0.0`) 
+    ///   will pass the depth test and be rendered on top of objects with 
+    ///   larger depth values
+    ///
+    /// This is the standard DirectX/Vulkan/Metal depth range convention where 
+    /// the depth buffer is cleared to `1.0` and objects are rendered with 
+    /// progressively smaller depth values as they get closer to the camera.
     ///
     /// # Note
     ///
     /// This method is specifically designed for integration with external rendering
     /// systems (like VIX) and is not part of the standard `iced_wgpu` pipeline flow.
     /// Its unconventional name reflects its specialized and critical nature.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let renderer = Renderer::new(engine, default_font, default_text_size);
+    ///
+    /// // If using custom shaders, you must call this:
+    /// renderer.vix_init_iced_important(
+    ///     depth_texture_view,
+    ///     msaa_texture_view,
+    ///     4, // 4x MSAA
+    /// );
+    /// ```
     pub fn vix_init_iced_important(
         &mut self,
         depth_view: wgpu::TextureView,
