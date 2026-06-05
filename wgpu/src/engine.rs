@@ -34,7 +34,7 @@ impl Engine {
         Self {
             format,
             vix_blitter: Arc::new(
-                wgpu::util::TextureBlitterBuilder::new(device, format)
+                wgpu::util::TextureBlitterBuilder::new(&device, format)
                     .blend_state(wgpu::BlendState::ALPHA_BLENDING).build()),
             quad_pipeline: quad::Pipeline::new(&device, format),
             text_pipeline: text::Pipeline::new(&device, &queue, format),
