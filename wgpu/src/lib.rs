@@ -646,14 +646,14 @@ impl Renderer {
                         view: self.vix_msaa_view.as_ref()
                             .unwrap(),
                         depth_slice: None,
-                        resolve_target: Some(self.vix_msaa_resolver.as_ref()
-                            .unwrap()),
+                        resolve_target: Some(frame),
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                            store: wgpu::StoreOp::Store,
+                            store: wgpu::StoreOp::Discard,
                         },
                     }
                 };
+
                 render_pass = ManuallyDrop::new(encoder.begin_render_pass(
                     &wgpu::RenderPassDescriptor {
                         label: Some("iced_wgpu custom shader render pass"),
