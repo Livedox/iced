@@ -737,9 +737,9 @@ impl Renderer {
                 {
                     let source = self.vix_msaa_resolver.as_ref().unwrap();
                     self.engine.vix_blitter.copy(&self.engine.device, encoder,
-                            source, frame);
+                        source, frame);
                 }
-                
+
                 if !need_render.is_empty() {
 
                     for (instance, clip_bounds) in need_render {
