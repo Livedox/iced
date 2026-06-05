@@ -18,6 +18,7 @@ pub struct Engine {
     #[cfg(any(feature = "image", feature = "svg"))]
     pub(crate) image_pipeline: crate::image::Pipeline,
     pub(crate) primitive_storage: Arc<RwLock<primitive::Storage>>,
+    pub vix_blitter: Arc<wgpu::util::TextureBlitter>,
     _shell: Shell,
 }
 
@@ -32,7 +33,8 @@ impl Engine {
     ) -> Self {
         Self {
             format,
-
+            vix_blitter: Arc::new(wgpu::util::TextureBlitter::new(
+                &device, format)),
             quad_pipeline: quad::Pipeline::new(&device, format),
             text_pipeline: text::Pipeline::new(&device, &queue, format),
             triangle_pipeline: triangle::Pipeline::new(

@@ -77,7 +77,8 @@ pub struct Renderer {
     engine: Engine,
     vix_sample_count: Option<u32>,
     vix_depth_texture_view: Option<wgpu::TextureView>,
-    vix_multisampled_framebuffer: Option<wgpu::TextureView>,
+    vix_msaa_view: Option<wgpu::TextureView>,
+    vix_msaa_resolver: Option<wgpu::TextureView>,
 
     default_font: Font,
     default_text_size: Pixels,
@@ -106,8 +107,9 @@ impl Renderer {
     ) -> Self {
         Self {
             vix_depth_texture_view: None,
-            vix_multisampled_framebuffer: None,
+            vix_msaa_view: None,
             vix_sample_count: None,
+            vix_msaa_resolver: None,
 
             default_font,
             default_text_size,
@@ -239,11 +241,13 @@ impl Renderer {
         &mut self,
         depth_view: wgpu::TextureView,
         msaa_view: wgpu::TextureView,
+        msaa_resolver: wgpu::TextureView,
         sample_count: u32,
     ) {
         self.vix_depth_texture_view = Some(depth_view);
         self.vix_sample_count = Some(sample_count);
-        self.vix_multisampled_framebuffer = Some(msaa_view);
+        self.vix_msaa_view = Some(msaa_view);
+        self.vix_msaa_resolver = Some(msaa_resolver);
     }
 
     pub fn present(
@@ -639,12 +643,13 @@ impl Renderer {
                     }
                 } else {
                     wgpu::RenderPassColorAttachment {
-                        view: self.vix_multisampled_framebuffer.as_ref()
+                        view: self.vix_msaa_view.as_ref()
                             .unwrap(),
                         depth_slice: None,
-                        resolve_target: Some(frame),
+                        resolve_target: Some(self.vix_msaa_resolver.as_ref()
+                            .unwrap()),
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
+                            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                             store: wgpu::StoreOp::Store,
                         },
                     }
@@ -707,6 +712,8 @@ impl Renderer {
                     }
                 }
 
+                
+
                 render_pass.set_viewport(
                     0.0,
                     0.0,
@@ -724,6 +731,15 @@ impl Renderer {
                 );
 
                 let _ = ManuallyDrop::into_inner(render_pass);
+
+                if let Some(sample_count) = self.vix_sample_count && 
+                    sample_count > 1
+                {
+                    let source = self.vix_msaa_resolver.as_ref().unwrap();
+                    self.engine.vix_blitter.copy(&self.engine.device, encoder,
+                            source, frame);
+                }
+                
                 if !need_render.is_empty() {
 
                     for (instance, clip_bounds) in need_render {
