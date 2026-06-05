@@ -732,13 +732,13 @@ impl Renderer {
 
                 let _ = ManuallyDrop::into_inner(render_pass);
 
-                if let Some(sample_count) = self.vix_sample_count && 
-                    sample_count > 1
-                {
-                    let source = self.vix_msaa_resolver.as_ref().unwrap();
-                    self.engine.vix_blitter.copy(&self.engine.device, encoder,
-                        source, frame);
-                }
+                // if let Some(sample_count) = self.vix_sample_count && 
+                //     sample_count > 1
+                // {
+                //     let source = self.vix_msaa_resolver.as_ref().unwrap();
+                //     self.engine.vix_blitter.copy(&self.engine.device, encoder,
+                //         source, frame);
+                // }
 
                 if !need_render.is_empty() {
 
