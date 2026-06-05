@@ -201,9 +201,21 @@ impl Renderer {
     ///   for rendering when `sample_count` is greater than `1`. The GPU will resolve
     ///   (downsample) this buffer into the main swap chain frame after rendering.
     ///
+    /// * `msaa_resolver` - The resolve target texture view. When MSAA is enabled,
+    ///   the GPU automatically resolves (averages) the multisampled pixels into this
+    ///   texture. This texture must have `sample_count = 1` and the same format as
+    ///   the swap chain.
+    ///
     /// * `sample_count` - The number of samples used for multisampled anti-aliasing.
     ///   If this value is `1` (no multisampling), the renderer will draw directly
-    ///   into the main frame buffer, and `msaa_view` will not be used.
+    ///   into the main frame buffer, and `msaa_view` and `msaa_resolver` will not be used.
+    ///
+    /// # Panics
+    ///
+    /// This method will panic if:
+    /// * `sample_count > 1` and `msaa_view` is `None`
+    /// * `sample_count > 1` and `msaa_resolver` is `None`
+    /// * `sample_count` is not a power of two (e.g., 1, 2, 4, 8, 16)
     ///
     /// # Depth Buffer Details
     ///
@@ -230,24 +242,41 @@ impl Renderer {
     /// ```rust,ignore
     /// let renderer = Renderer::new(engine, default_font, default_text_size);
     ///
-    /// // If using custom shaders, you must call this:
+    /// // Example with MSAA enabled (4x)
     /// renderer.vix_init_iced_important(
     ///     depth_texture_view,
-    ///     msaa_texture_view,
-    ///     4, // 4x MSAA
+    ///     Some(msaa_texture_view),
+    ///     Some(msaa_resolve_view),
+    ///     4,
+    /// );
+    ///
+    /// // Example without MSAA
+    /// renderer.vix_init_iced_important(
+    ///     depth_texture_view,
+    ///     None,
+    ///     None,
+    ///     1,
     /// );
     /// ```
     pub fn vix_init_iced_important(
         &mut self,
         depth_view: wgpu::TextureView,
-        msaa_view: wgpu::TextureView,
-        msaa_resolver: wgpu::TextureView,
+        msaa_view: Option<wgpu::TextureView>,
+        msaa_resolver: Option<wgpu::TextureView>,
         sample_count: u32,
     ) {
         self.vix_depth_texture_view = Some(depth_view);
         self.vix_sample_count = Some(sample_count);
-        self.vix_msaa_view = Some(msaa_view);
-        self.vix_msaa_resolver = Some(msaa_resolver);
+        if sample_count > 1 && (msaa_view.is_none() || msaa_resolver.is_none()) {
+            panic!(
+                "MSAA initialization failed: sample_count is set to {} but required MSAA resources are missing. \
+                Ensure that both `msaa_view` (multisampled texture view) and `msaa_resolver` (resolve target view) \
+                are created before attempting to render with multisampling.",
+                sample_count
+            );
+        }
+        self.vix_msaa_view = msaa_view;
+        self.vix_msaa_resolver = msaa_resolver;
     }
 
     pub fn present(
@@ -646,7 +675,8 @@ impl Renderer {
                         view: self.vix_msaa_view.as_ref()
                             .unwrap(),
                         depth_slice: None,
-                        resolve_target: Some(frame),
+                        resolve_target: Some(self.vix_msaa_resolver.as_ref()
+                            .unwrap()),
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                             store: wgpu::StoreOp::Discard,
@@ -732,13 +762,13 @@ impl Renderer {
 
                 let _ = ManuallyDrop::into_inner(render_pass);
 
-                // if let Some(sample_count) = self.vix_sample_count && 
-                //     sample_count > 1
-                // {
-                //     let source = self.vix_msaa_resolver.as_ref().unwrap();
-                //     self.engine.vix_blitter.copy(&self.engine.device, encoder,
-                //         source, frame);
-                // }
+                if let Some(sample_count) = self.vix_sample_count && 
+                    sample_count > 1
+                {
+                    let source = self.vix_msaa_resolver.as_ref().unwrap();
+                    self.engine.vix_blitter.copy(&self.engine.device, encoder,
+                        source, frame);
+                }
 
                 if !need_render.is_empty() {
 
