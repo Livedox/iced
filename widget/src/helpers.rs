@@ -2006,6 +2006,17 @@ where
     crate::Shader::new(program)
 }
 
+/// Creates a new [`BackgroundShader`].
+///
+/// [`BackgroundShader`]: crate::BackgroundShader
+#[cfg(feature = "wgpu")]
+pub fn background_shader<Message, P>(program: P) -> crate::shader::BackgroundShader<Message, P>
+where
+    P: crate::shader::Program<Message>,
+{
+    crate::shader::BackgroundShader::new(program)
+}
+
 /// Creates a new [`MouseArea`].
 pub fn mouse_area<'a, Message, Theme, Renderer>(
     widget: impl Into<Element<'a, Message, Theme, Renderer>>,
