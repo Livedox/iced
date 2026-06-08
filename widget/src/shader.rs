@@ -204,6 +204,7 @@ where
 ///
 /// Must be initialized with a [`Program`], which describes the internal widget state & how
 /// its [`Program::Primitive`]s are drawn.
+/// Only Length::Fixed Works
 pub struct BackgroundShader<Message, P: Program<Message>> {
     width: Length,
     height: Length,
@@ -261,7 +262,7 @@ where
         &mut self,
         _tree: &mut Tree,
         _renderer: &Renderer,
-        limits: &layout::Limits,
+        _limits: &layout::Limits,
     ) -> layout::Node {
         layout::Node::new(Size::ZERO)
     }
