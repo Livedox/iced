@@ -208,7 +208,6 @@ pub struct BackgroundShader<Message, P: Program<Message>> {
     width: Length,
     height: Length,
     program: P,
-    available_size: Option<Size>,
     _message: PhantomData<Message>,
 }
 
@@ -219,7 +218,6 @@ impl<Message, P: Program<Message>> BackgroundShader<Message, P> {
             width: Length::Fixed(100.0),
             height: Length::Fixed(100.0),
             program,
-            available_size: None,
             _message: PhantomData,
         }
     }
@@ -265,7 +263,6 @@ where
         _renderer: &Renderer,
         limits: &layout::Limits,
     ) -> layout::Node {
-        self.available_size = Some(limits.max());
         layout::Node::new(Size::ZERO)
     }
 
@@ -325,9 +322,11 @@ where
         _viewport: &Rectangle,
     ) {
         let mut bounds = layout.bounds();
-        if let Some(size) = self.available_size {
-            bounds.width = size.width;
-            bounds.height = size.height;
+        if let Length::Fixed(width) = self.width && 
+            let Length::Fixed(height) = self.height
+        {
+            bounds.width = width;
+            bounds.height = height;
         }
         let state = tree.state.downcast_ref::<P::State>();
 
