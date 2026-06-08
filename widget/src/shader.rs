@@ -264,7 +264,7 @@ where
         _renderer: &Renderer,
         _limits: &layout::Limits,
     ) -> layout::Node {
-        layout::Node::new(Size::ZERO)
+        layout::Node::new(Size::UNIT)
     }
 
     fn update(
