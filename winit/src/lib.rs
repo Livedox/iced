@@ -26,6 +26,8 @@ pub use program::runtime;
 pub use runtime::futures;
 pub use winit;
 
+#[cfg(target_os = "android")]
+pub mod android;
 pub mod clipboard;
 pub mod conversion;
 
@@ -72,6 +74,40 @@ where
 {
     use winit::event_loop::EventLoop;
 
+    run_inner(program, event_loop)
+}
+
+/// Runs a [`Program`] with the provided settings.
+#[cfg(target_os = "android")]
+pub fn run_android<P>(
+    program: P,
+    app: winit::platform::android::activity::AndroidApp,
+) -> Result<(), Error>
+where
+    P: Program + 'static,
+    P::Theme: theme::Base,
+{
+    use winit::platform::android::EventLoopBuilderExtAndroid;
+
+    let _ = android::ANDROID_APP.set(app.clone());
+
+    let event_loop = EventLoop::with_user_event()
+        .with_android_app(app)
+        .build()
+        .expect("Create event loop");
+
+    run_inner(program, event_loop)
+}
+
+/// Runs a [`Program`] with the provided settings.
+fn run_inner<P>(
+    program: P,
+    event_loop: EventLoop<Action<<P as Program>::Message>>,
+) -> Result<(), Error>
+where
+    P: Program + 'static,
+    P::Theme: theme::Base,
+{
     let boot_span = debug::boot();
     let settings = program.settings();
     let window_settings = program.window();
