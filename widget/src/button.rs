@@ -293,7 +293,7 @@ where
             shell,
             viewport,
         );
-
+        println!("{:?} {:?}", event, shell.is_event_captured());
         if shell.is_event_captured() {
             return;
         }
