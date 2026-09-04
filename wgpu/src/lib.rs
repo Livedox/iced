@@ -847,6 +847,7 @@ impl Renderer {
                 })
                 .count()
         });
+        println!("r12");
     }
 }
 
