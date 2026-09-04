@@ -283,6 +283,7 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
+        println!("{:?} {:?}", event, shell.is_event_captured());
         self.content.as_widget_mut().update(
             &mut tree.children[0],
             event,
