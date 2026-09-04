@@ -356,6 +356,7 @@ pub fn window_event(
             Some(Event::Window(window::Event::FilesHoveredLeft))
         }
         WindowEvent::Touch(touch) => {
+            println!("📱 Touch event received: phase={:?}", touch);
             Some(Event::Touch(touch_event(touch, scale_factor)))
         }
         WindowEvent::Moved(position) => {
