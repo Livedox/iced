@@ -294,7 +294,8 @@ where
             shell,
             viewport,
         );
-        println!("{:?} {:?}", event, shell.is_event_captured());
+        println!("{:?} {:?} {:?} {:?}", 
+            event, shell.is_event_captured(), layout.bounds(), cursor);
         if shell.is_event_captured() {
             return;
         }
@@ -302,10 +303,12 @@ where
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
+                println!("Pressed!");
                 if self.on_press.is_some() {
                     let bounds = layout.bounds();
-
+                    println!("Pressed on_press!");
                     if cursor.is_over(bounds) {
+                        println!("Pressed capture!");
                         let state = tree.state.downcast_mut::<State>();
 
                         state.is_pressed = true;
@@ -316,9 +319,10 @@ where
             }
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerLifted { .. }) => {
+                println!("Lifted!");
                 if let Some(on_press) = &self.on_press {
                     let state = tree.state.downcast_mut::<State>();
-
+                    println!("Lifted pp !");
                     if state.is_pressed {
                         state.is_pressed = false;
 
