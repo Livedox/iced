@@ -547,7 +547,6 @@ impl Renderer {
         viewport: &Viewport,
     ) {
         use std::mem::ManuallyDrop;
-        println!("r1");
         let mut render_pass = ManuallyDrop::new(encoder.begin_render_pass(
             &wgpu::RenderPassDescriptor {
                 label: Some("iced_wgpu render pass"),
@@ -579,19 +578,17 @@ impl Renderer {
                 occlusion_query_set: None,
             },
         ));
-        println!("r2");
         let mut quad_layer = 0;
         let mut mesh_layer = 0;
         let mut text_layer = 0;
 
         #[cfg(any(feature = "svg", feature = "image"))]
         let mut image_layer = 0;
-        println!("r3");
         let scale_factor = viewport.scale_factor();
         let physical_bounds = Rectangle::<f32>::from(Rectangle::with_size(
             viewport.physical_size(),
         ));
-        println!("r4");
+
         let scale = Transformation::scale(scale_factor);
         for layer in self.layers.iter() {
             let Some(physical_bounds) =
@@ -708,7 +705,6 @@ impl Renderer {
                     .expect("Read primitive storage");
 
                 let mut need_render = Vec::new();
-                println!("r5");
                 for instance in &layer.primitives {
                     let bounds = instance.bounds * scale;
 
@@ -743,7 +739,6 @@ impl Renderer {
                 }
 
                 
-                println!("r6");
                 render_pass.set_viewport(
                     0.0,
                     0.0,
@@ -782,7 +777,6 @@ impl Renderer {
                     }
 
                 }
-                println!("r7");
                 render_pass = ManuallyDrop::new(encoder.begin_render_pass(
                     &wgpu::RenderPassDescriptor {
                         label: Some("iced_wgpu render pass"),
@@ -805,7 +799,6 @@ impl Renderer {
 
                 render_span.finish();
             }
-            println!("r8");
             #[cfg(any(feature = "svg", feature = "image"))]
             if !layer.images.is_empty() {
                 let render_span = debug::render(debug::Primitive::Image);
@@ -819,7 +812,6 @@ impl Renderer {
 
                 image_layer += 1;
             }
-            println!("r9");
             if !layer.text.is_empty() {
                 let render_span = debug::render(debug::Primitive::Text);
                 text_layer += self.text.render(
@@ -833,9 +825,7 @@ impl Renderer {
                 render_span.finish();
             }
         }
-        println!("r10");
         let _ = ManuallyDrop::into_inner(render_pass);
-        println!("r11");
         debug::layers_rendered(|| {
             self.layers
                 .iter()
@@ -847,7 +837,6 @@ impl Renderer {
                 })
                 .count()
         });
-        println!("r12");
     }
 }
 
