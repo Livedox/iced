@@ -9,22 +9,16 @@ struct VertexInput {
 }
 
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
+    @invariant @builtin(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
     @location(1) uv: vec2<f32>,
     @location(2) @interpolate(flat) content_type: u32,
-}
-
-struct FragmentInput {
-    @location(0) color: vec4<f32>,
-    @location(1) uv: vec2<f32>,
-    @location(2) @interpolate(flat) content_type: u32,
-}
+};
 
 struct Params {
     screen_resolution: vec2<u32>,
     _pad: vec2<u32>,
-}
+};
 
 @group(0) @binding(0)
 var color_atlas_texture: texture_2d<f32>;
@@ -112,13 +106,14 @@ fn vs_main(in_vert: VertexInput) -> VertexOutput {
     }
 
     vert_output.content_type = content_type;
+
     vert_output.uv = vec2<f32>(uv) / vec2<f32>(dim);
 
     return vert_output;
 }
 
 @fragment
-fn fs_main(in_frag: FragmentInput) -> @location(0) vec4<f32> {
+fn fs_main(in_frag: VertexOutput) -> @location(0) vec4<f32> {
     switch in_frag.content_type {
         case 0u: {
             return textureSampleLevel(color_atlas_texture, atlas_sampler, in_frag.uv, 0.0);
