@@ -1172,6 +1172,22 @@ name = "cryoglyph"
 version = "0.1.0"
 dependencies = [
  "cosmic-text",
+ "criterion",
+ "etagere",
+ "lru",
+ "pollster",
+ "rustc-hash 2.1.1",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "cryoglyph"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08bc795bdbccdbd461736fb163930a009da6597b226d6f6fce33e7a8eb6ec519"
+dependencies = [
+ "cosmic-text",
  "etagere",
  "lru",
  "rustc-hash 2.1.1",
@@ -2544,7 +2560,7 @@ version = "0.14.0"
 dependencies = [
  "bitflags 2.10.0",
  "bytemuck",
- "cryoglyph",
+ "cryoglyph 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "glam",
  "guillotiere",
