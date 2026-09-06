@@ -237,6 +237,9 @@ wgpu = { version = "27.0", default-features = false, features = ["std", "wgsl"] 
 window_clipboard = { version = "0.5", default-features = false }
 winit = { version = "0.30", default-features = false, features = ["rwh_06"] }
 
+[patch.crates-io]
+cryoglyph = { path = "./cryoglyph" }
+
 [workspace.lints.rust]
 rust_2018_idioms = { level = "deny", priority = -1 }
 missing_docs = "deny"
