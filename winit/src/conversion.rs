@@ -229,8 +229,11 @@ pub fn window_event(
                 }))
             }
         },
-        // Ignore keyboard presses/releases during window focus/unfocus
-        WindowEvent::KeyboardInput { is_synthetic, .. } if is_synthetic => None,
+            // Ignore keyboard presses/releases during window focus/unfocus;
+            // on Android synthetic key events are used to forward IME edits
+            // (e.g. backspace and submission) to the focused widget.
+            #[cfg(not(target_os = "android"))]
+            WindowEvent::KeyboardInput { is_synthetic, .. } if is_synthetic => None,
         WindowEvent::KeyboardInput { event, .. } => Some(Event::Keyboard({
             let key = {
                 #[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
