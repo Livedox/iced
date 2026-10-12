@@ -22,6 +22,15 @@ pub enum InputMethod<T = String> {
         /// be tricky, you can instead provide the current pre-edit here and the
         /// runtime will display it as an overlay (i.e. "Over-the-spot IME").
         preedit: Option<Preedit<T>>,
+        /// The current contents of the focused widget, if they can be shared
+        /// with the input method.
+        ///
+        /// Platforms with a shared IME text buffer (like Android) use this to
+        /// keep the buffer in sync with the widget.
+        text: Option<String>,
+        /// The byte-wise selection of the focused widget, if it can be shared
+        /// with the input method.
+        selection: Option<(usize, usize)>,
     },
 }
 
@@ -93,12 +102,16 @@ impl InputMethod {
     ///     cursor: Rectangle::new(Point::ORIGIN, Size::UNIT),
     ///     purpose: Purpose::Normal,
     ///     preedit: Some(Preedit { content: "1".to_owned(), selection: None, text_size: None }),
+    ///     text: Some("1".to_owned()),
+    ///     selection: Some((1, 1)),
     /// };
     ///
     /// let open_2 = InputMethod::Enabled {
     ///     cursor: Rectangle::new(Point::ORIGIN, Size::UNIT),
     ///     purpose: Purpose::Secure,
     ///     preedit: Some(Preedit { content: "2".to_owned(), selection: None, text_size: None }),
+    ///     text: Some("2".to_owned()),
+    ///     selection: Some((1, 1)),
     /// };
     ///
     /// let mut ime = InputMethod::Disabled;
@@ -135,10 +148,14 @@ impl<T> InputMethod<T> {
                 cursor,
                 purpose,
                 preedit,
+                text,
+                selection,
             } => InputMethod::Enabled {
                 cursor: *cursor,
                 purpose: *purpose,
                 preedit: preedit.as_ref().map(Preedit::to_owned),
+                text: text.clone(),
+                selection: *selection,
             },
         }
     }

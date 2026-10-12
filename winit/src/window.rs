@@ -218,8 +218,10 @@ where
                 cursor,
                 purpose,
                 preedit,
+                text,
+                selection,
             } => {
-                self.enable_ime(cursor, purpose);
+                self.enable_ime(cursor, purpose, text, selection);
 
                 if let Some(preedit) = preedit {
                     if preedit.content.is_empty() {
@@ -278,8 +280,15 @@ where
         &mut self,
         cursor: Rectangle,
         purpose: input_method::Purpose,
+        text: Option<String>,
+        selection: Option<(usize, usize)>,
     ) {
-        if self.ime_state.is_none() {
+        #[cfg(not(target_os = "android"))]
+        let _ = (&text, &selection);
+
+        let was_disabled = self.ime_state.is_none();
+
+        if was_disabled {
             self.raw.set_ime_allowed(true);
         }
 
@@ -291,6 +300,18 @@ where
             self.raw.set_ime_purpose(conversion::ime_purpose(purpose));
 
             self.ime_state = Some((cursor, purpose));
+        }
+
+        // Platforms with a shared IME buffer need to start from the widget
+        // contents; only seed when the IME gets enabled to avoid resetting
+        // the composition on every cursor movement.
+        #[cfg(target_os = "android")]
+        if was_disabled
+            && let Some(text) = text
+        {
+            let selection = selection.unwrap_or((text.len(), text.len()));
+
+            self.raw.set_ime_text(text, selection);
         }
     }
 

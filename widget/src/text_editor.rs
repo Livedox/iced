@@ -376,6 +376,8 @@ where
             ),
             purpose: input_method::Purpose::Normal,
             preedit: state.preedit.as_ref().map(input_method::Preedit::as_ref),
+            text: None,
+            selection: None,
         }
     }
 }

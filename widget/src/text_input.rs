@@ -404,6 +404,10 @@ where
             return InputMethod::Disabled;
         };
 
+        // The platform IME buffer always gets the actual contents, even for
+        // secure fields (the buffer never leaves the process).
+        let ime_text = value.to_string();
+
         let secure_value = self.is_secure.then(|| value.secure());
         let value = secure_value.as_ref().unwrap_or(value);
 
@@ -438,6 +442,11 @@ where
                 input_method::Purpose::Normal
             },
             preedit: state.preedit.as_ref().map(input_method::Preedit::as_ref),
+            text: Some(ime_text),
+            selection: Some((
+                state.cursor.start(value),
+                state.cursor.end(value),
+            )),
         }
     }
 
