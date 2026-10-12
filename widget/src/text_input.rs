@@ -1291,6 +1291,16 @@ where
                     let state = state::<Renderer>(tree);
 
                     if let Some(focus) = &mut state.is_focused {
+                        // Some IMEs (e.g. the Android soft keyboard) report
+                        // the "Done"/submit action as a newline commit.
+                        if text == "\n"
+                            && let Some(on_submit) = self.on_submit.clone()
+                        {
+                            shell.publish(on_submit);
+                            shell.capture_event();
+                            return;
+                        }
+
                         let Some(on_input) = &self.on_input else {
                             return;
                         };
